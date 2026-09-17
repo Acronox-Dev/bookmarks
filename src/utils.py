@@ -1,4 +1,6 @@
 from urllib.parse import urlparse
+from src.exceptions import InvalidURLError
+import src.commands as commands
 
 # VALIDATION FUNCTIONS
 
@@ -38,6 +40,30 @@ def format_url(url) :
     if not url.startswith(("http://", "https://")):
         url = "http://" + url
     return url if is_url_valid(url) else None
+
+# FACTORING FUNCTIONS
+
+def do_commands(options, bookmarks) :
+    if options.command == 'add' or options.command == 'modify':
+        title = format_title(options.t[:64] if options.t else "")
+        url = format_url(options.u if options.u else "")
+        notes = options.n if options.n else ""
+    
+        if not is_url_valid(url):
+            raise InvalidURLError
+    
+        details = "; ".join([title, url, notes])
+
+        if options.command == 'add' : 
+            commands.add(details, options.file, bookmarks)
+        else :
+            commands.modify(options.id, details, options.file, bookmarks)
+    
+    elif options.command == 'rm':
+        commands.rm(options.id, options.file, bookmarks)
+    
+    elif options.command == 'show':
+        commands.show(bookmarks)
 
 # OTHERS
 
