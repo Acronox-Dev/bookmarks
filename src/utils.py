@@ -1,10 +1,21 @@
+'''
+Utility functions for validating, formatting and deduplicating bookmarks.
+'''
+
 from urllib.parse import urlparse
 from src.exceptions import InvalidURLError
-import src.commands as commands
 
 # VALIDATION FUNCTIONS
 
 def is_url_valid(url) :
+    """
+    Check whether a URL is valid (uses http/https scheme and has a network location).
+
+    Args:
+        url : the URL to validate
+    Returns:
+        True if the URL is valid, False otherwise
+    """
     try:
         result = urlparse(url)
         return all([result.scheme in ("http", "https"), result.netloc])
@@ -41,33 +52,16 @@ def format_url(url) :
         url = "http://" + url
     return url if is_url_valid(url) else None
 
-# FACTORING FUNCTIONS
-
-def do_commands(options, bookmarks) :
-    if options.command == 'add' or options.command == 'modify':
-        title = format_title(options.t[:64] if options.t else "")
-        url = format_url(options.u if options.u else "")
-        notes = options.n if options.n else ""
-    
-        if not is_url_valid(url):
-            raise InvalidURLError
-    
-        details = "; ".join([title, url, notes])
-
-        if options.command == 'add' : 
-            commands.add(details, options.file, bookmarks)
-        else :
-            commands.modify(options.id, details, options.file, bookmarks)
-    
-    elif options.command == 'rm':
-        commands.rm(options.id, options.file, bookmarks)
-    
-    elif options.command == 'show':
-        commands.show(bookmarks)
-
 # OTHERS
 
 def url_duplicate_detection(details, bookmarks) :
-    if details.split(";")[1] in [b.split(";")[2] for b in bookmarks] :
-        print("This URL has alreay been added")
-        return
+    """
+    Check whether the url contained in details is already used by an existing bookmark.
+
+    Args:
+        details : Array values describing the bookmark, url expected at index 1
+        bookmarks : list of existing bookmarks
+    Returns:
+        True if the url is already present among the bookmarks, False otherwise
+    """
+    return details.split(";")[1] in [b.split(";")[2] for b in bookmarks]
