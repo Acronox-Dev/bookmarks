@@ -9,11 +9,11 @@ def add(bookmarks, details) :
     Returns:  
         The new bookmark                               
     """
-    bookmark = f"1, {details}\n"
+    bookmark = f"1; {details}\n"
     
     if bookmarks :
-        new_id = max(map(lambda b: int(b.split(",")[0]), bookmarks)) + 1
-        bookmark = f"{new_id}, {details}\n"
+        new_id = max(map(lambda b: int(b.split(";")[0]), bookmarks)) + 1
+        bookmark = f"{new_id}; {details}\n"
         
     return bookmark
 
@@ -29,9 +29,8 @@ def modify(bookmarks, id, new_details):
     Returns:
         Updated list of bookmarks with the modified bookmark
     """
-    updated_bookmarks = list(filter(lambda b: str(id) + new_details if b.split(",")[0] != id else b, bookmarks))
+    updated_bookmarks = list(filter(lambda b: str(id) + new_details if b.split(";")[0] != id else b, bookmarks))
     return updated_bookmarks
-
 
 def rm(bookmarks, id):
     """
@@ -44,36 +43,32 @@ def rm(bookmarks, id):
     Returns:
         Updated list of bookmarks without the removed bookmark
     """
-    updated_bookmarks = list(filter(lambda b: b.split(",")[0] != id, bookmarks))
+    updated_bookmarks = list(filter(lambda b: b.split(";")[0] != id, bookmarks))
     return updated_bookmarks
 
-
-def show(bookmarks) :
+def show(bookmarks):
     """
-    Display the bookmarks in a formatted table.
+    Display the bookmarks in a formatted table with centered text.
 
     Args:
         bookmarks : list of existing bookmarks
     """
-    sorted_bookmarks = ["id,title,url,notes"] + sorted(bookmarks, key =lambda x: int(x.split(",")[0]))
-    lengths = [map(len, str(b).split(",")) for b in sorted_bookmarks]
-    max_lengths = list(map(max, *lengths))
+    sorted_bookmarks = ["id;title;url;notes"] + sorted(bookmarks, key=lambda x: int(x.split(";")[0]))
+    parsed_bookmarks = [[item.strip() for item in b.split(";")] for b in sorted_bookmarks]
+    max_lengths = [max(len(row[i]) for row in parsed_bookmarks) for i in range(4)]
 
     border = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
 
-    def recursive_print(i) :
-        if i >= len(sorted_bookmarks) :
+    def recursive_print(i):
+        if i >= len(parsed_bookmarks):
             return
 
-        values = sorted_bookmarks[i].split(",")
-        strings = [v.strip() for v in values]
-
-        for j in range(len(strings)) :
-            print("| ", end ="")
-            print(strings[j], end=" " * (max_lengths[j] - len(strings[j]) + 1))
-
-        print("|")
+        row = parsed_bookmarks[i]
+        centered_cells = [row[j].center(max_lengths[j]) for j in range(len(row))]
+        
+        print("| " + " | ".join(centered_cells) + " |")
         print(border)
+        
         recursive_print(i + 1)
 
     print(border)

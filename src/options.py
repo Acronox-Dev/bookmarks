@@ -12,16 +12,16 @@ def create_parser():
 
     # Create parser for the add command
     parser_add = subparsers.add_parser('add', help='Add a new bookmark. The rest of the command line is used for the bookmark details, the default being "no details".')
-    parser_add.add_argument('-t', 'title', nargs='?', default="no title", help="the title of the bookmark")
-    parser_add.add_argument('-n', 'notes', nargs='?', default="no notes", help="the notes of the bookmark")
-    parser_add.add_argument('-u', 'url', nargs='?', default="no url", help="the url of the bookmark")
+    parser_add.add_argument('-t', nargs='?', default="no title", help="the title of the bookmark")
+    parser_add.add_argument('-u', nargs='?', default="no url", help="the url of the bookmark")
+    parser_add.add_argument('-n', nargs='?', default="no notes", help="the notes of the bookmark")
 
     # Create parser for the modify command
     parser_modify = subparsers.add_parser('modify',help='Modify a bookmark given its id. The rest of the command line is used for the bookmark details, the default being "no details"')
     parser_modify.add_argument('id', help="the bookmark id")
-    parser_modify.add_argument('-t', 'title', nargs='?', default="no title", help="the new title of the bookmark")
-    parser_modify.add_argument('-n', 'notes', nargs='?', default="no notes", help="the new notes of the bookmark")
-    parser_modify.add_argument('-u', 'url', nargs='?', default="no url", help="the new url of the bookmark")
+    parser_modify.add_argument('-t', nargs='?', default="no title", help="the new title of the bookmark")
+    parser_modify.add_argument('-u', nargs='?', default="no url", help="the new url of the bookmark")
+    parser_modify.add_argument('-n', nargs='?', default="no notes", help="the new notes of the bookmark")
 
     # Create parser for the rm command
     parser_rm = subparsers.add_parser('rm',help='Remove a bookmark given its id')
