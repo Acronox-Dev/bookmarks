@@ -30,6 +30,7 @@ def modify(bookmarks, id, new_details):
         Updated list of bookmarks with the modified bookmark
     """
     updated_bookmarks = list(filter(lambda b: str(id) + new_details if b.split(";")[0] != id else b, bookmarks))
+    if updated_bookmarks == bookmarks : print("Warning : No bookmark associated with id =", id)
     return updated_bookmarks
 
 def rm(bookmarks, id):
@@ -44,6 +45,7 @@ def rm(bookmarks, id):
         Updated list of bookmarks without the removed bookmark
     """
     updated_bookmarks = list(filter(lambda b: b.split(";")[0] != id, bookmarks))
+    if updated_bookmarks == bookmarks : print("Warning : No bookmark associated with id =", id)
     return updated_bookmarks
 
 def show(bookmarks):

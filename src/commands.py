@@ -1,10 +1,9 @@
 import src.core as core
+import src.utils as utils
 
 def add(details, filename, bookmarks):
-    # URL Duplicate detection
-    if details.split(";")[1] in [b.split(";")[1] for b in bookmarks] :
-        print("This URL has alreay been added")
-        return
+    # Verification
+    utils.url_duplicate_detection(details, bookmarks)
 
     # Add the bookmark otherwise
     with open(filename, 'a') as f:
@@ -14,10 +13,8 @@ def add(details, filename, bookmarks):
     return id
 
 def modify(id, details, filename, bookmarks):
-    # URL Duplicate detection
-    if details.split(";")[1] in [b.split(";")[1] for b in bookmarks] :
-        print("This URL has alreay been added")
-        return
+    # Verification
+    utils.url_duplicate_detection(details, bookmarks)
 
     # Update the bookmark otherwise
     updated_bookmarks = core.modify(bookmarks, id, details)

@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-# Validation functions
+# VALIDATION FUNCTIONS
 
 def is_url_valid(url) :
     try:
@@ -9,7 +9,7 @@ def is_url_valid(url) :
     except ValueError:
         return False
 
-# Formatting functions
+# FORMATTING FUNCTIONS
 
 def format_title(title) :
     """
@@ -38,3 +38,10 @@ def format_url(url) :
     if not url.startswith(("http://", "https://")):
         url = "http://" + url
     return url if is_url_valid(url) else None
+
+# OTHERS
+
+def url_duplicate_detection(details, bookmarks) :
+    if details.split(";")[1] in [b.split(";")[2] for b in bookmarks] :
+        print("This URL has alreay been added")
+        return
