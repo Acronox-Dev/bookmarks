@@ -56,6 +56,15 @@ class TestValidateOptionTypes(unittest.TestCase):
         options = SimpleNamespace(command="show")
         self.assertTrue(utils.validate_option_types(options))
 
+    def test_non_string_labels_returns_false(self):
+        options = SimpleNamespace(l=42)
+        self.assertFalse(utils.validate_option_types(options))
+
+    def test_id1_and_id2_are_cast_to_int(self):
+        options = SimpleNamespace(id1="1", id2="2")
+        utils.validate_option_types(options)
+        self.assertEqual((options.id1, options.id2), (1, 2))
+
 
 class TestFormatTitle(unittest.TestCase):
     """Tests for utils.format_title."""
@@ -93,6 +102,22 @@ class TestFormatNotes(unittest.TestCase):
         self.assertEqual(utils.format_notes("No;tes\n"), "Notes")
 
 
+class TestFormatLabels(unittest.TestCase):
+    """Tests for utils.format_labels."""
+
+    def test_splits_on_comma_and_strips(self):
+        self.assertEqual(utils.format_labels(" work , important "), ("work", "important"))
+
+    def test_drops_empty_labels(self):
+        self.assertEqual(utils.format_labels("work,,important,"), ("work", "important"))
+
+    def test_deduplicates_keeping_first_occurrence(self):
+        self.assertEqual(utils.format_labels("work,work,important"), ("work", "important"))
+
+    def test_empty_string_returns_empty_tuple(self):
+        self.assertEqual(utils.format_labels(""), ())
+
+
 class TestWriteBookmarks(unittest.TestCase):
     """Tests for utils.write_bookmarks."""
 
@@ -105,19 +130,32 @@ class TestWriteBookmarks(unittest.TestCase):
 
     def test_write_overwrites_file_content(self):
         bookmark = (1, "Title", "https://example.com", "Notes",
-                    "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0)
+                    "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0,
+                    ("work", "important"), (2, 3))
         utils.write_bookmarks(self.path, 'w', [bookmark])
         with open(self.path, 'r', encoding='utf-8') as f:
             content = f.read()
         self.assertEqual(
             content,
             "1; Title; https://example.com; Notes; 2026-01-01 00:00:00; "
-            "2026-01-01 00:00:00; 0\n"
+            "2026-01-01 00:00:00; 0; work,important; 2,3\n"
+        )
+
+    def test_write_serializes_empty_labels_and_related_ids(self):
+        bookmark = (1, "Title", "https://example.com", "Notes",
+                    "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0, (), ())
+        utils.write_bookmarks(self.path, 'w', [bookmark])
+        with open(self.path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        self.assertEqual(
+            content,
+            "1; Title; https://example.com; Notes; 2026-01-01 00:00:00; "
+            "2026-01-01 00:00:00; 0; ; \n"
         )
 
     def test_write_appends_to_existing_content(self):
         bookmark = (1, "Title", "https://example.com", "Notes",
-                    "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0)
+                    "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0, (), ())
         utils.write_bookmarks(self.path, 'w', [bookmark])
         utils.write_bookmarks(self.path, 'a', [bookmark])
         with open(self.path, 'r', encoding='utf-8') as f:
@@ -130,17 +168,25 @@ class TestParseBookmarks(unittest.TestCase):
 
     def test_parses_a_single_line(self):
         lines = ["1; Title; https://example.com; Notes; 2026-01-01 00:00:00; "
-                  "2026-01-01 00:00:00; 0\n"]
+                  "2026-01-01 00:00:00; 0; work,important; 2,3\n"]
         bookmarks = utils.parse_bookmarks(lines)
         self.assertEqual(
             bookmarks,
             [(1, "Title", "https://example.com", "Notes",
-              "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0)]
+              "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0,
+              ("work", "important"), (2, 3))]
         )
+
+    def test_parses_empty_labels_and_related_ids(self):
+        lines = ["1; Title; https://example.com; Notes; 2026-01-01 00:00:00; "
+                  "2026-01-01 00:00:00; 0; ; \n"]
+        bookmarks = utils.parse_bookmarks(lines)
+        self.assertEqual(bookmarks[0][7], ())
+        self.assertEqual(bookmarks[0][8], ())
 
     def test_ignores_blank_lines(self):
         lines = ["1; Title; https://example.com; Notes; 2026-01-01 00:00:00; "
-                  "2026-01-01 00:00:00; 0\n", "\n", "   \n"]
+                  "2026-01-01 00:00:00; 0; ; \n", "\n", "   \n"]
         bookmarks = utils.parse_bookmarks(lines)
         self.assertEqual(len(bookmarks), 1)
 
@@ -153,18 +199,18 @@ class TestUrlDuplicateDetection(unittest.TestCase):
 
     def test_detects_existing_url(self):
         bookmarks = [(1, "Title", "https://example.com", "Notes",
-                       "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0)]
-        details = ("New", "https://example.com", "new")
+                       "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0, (), ())]
+        details = ("New", "https://example.com", "new", ())
         self.assertTrue(utils.url_duplicate_detection(details, bookmarks))
 
     def test_new_url_is_not_a_duplicate(self):
         bookmarks = [(1, "Title", "https://example.com", "Notes",
-                       "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0)]
-        details = ("New", "https://other.com", "new")
+                       "2026-01-01 00:00:00", "2026-01-01 00:00:00", 0, (), ())]
+        details = ("New", "https://other.com", "new", ())
         self.assertFalse(utils.url_duplicate_detection(details, bookmarks))
 
     def test_empty_bookmarks_is_never_a_duplicate(self):
-        details = ("New", "https://example.com", "new")
+        details = ("New", "https://example.com", "new", ())
         self.assertFalse(utils.url_duplicate_detection(details, []))
 
 

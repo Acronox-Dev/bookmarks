@@ -29,14 +29,16 @@ def validate_option_types(options):
     bookmark id to an int in place when present.
 
     Args:
-        options : parsed command line options (command, id, t, u, n, file)
+        options : parsed command line options (command, id/id1/id2, t, u,
+            n, l, file)
 
     Returns:
         True if every present option has a valid type, False otherwise
 
     Effects:
-        Prints an error message per invalid option and mutates
-        options.id in place, replacing it with an int when it is valid.
+        Prints an error message per invalid option and mutates each
+        present id attribute in place, replacing it with an int when
+        it is valid.
     """
     types_boolean = True
 
@@ -52,12 +54,17 @@ def validate_option_types(options):
         print("Les notes doivent être une chaîne de caractères")
         types_boolean = False
 
-    if hasattr(options, 'id') and options.id is not None:
-        try:
-            options.id = int(options.id)
-        except ValueError:
-            print("L'ID doit être un nombre entier")
-            types_boolean = False
+    if hasattr(options, 'l') and options.l is not None and not isinstance(options.l, str):
+        print("Les labels doivent être une chaîne de caractères")
+        types_boolean = False
+
+    for id_attr in ('id', 'id1', 'id2'):
+        if hasattr(options, id_attr) and getattr(options, id_attr) is not None:
+            try:
+                setattr(options, id_attr, int(getattr(options, id_attr)))
+            except ValueError:
+                print("L'ID doit être un nombre entier")
+                types_boolean = False
 
     return types_boolean
 
@@ -111,12 +118,57 @@ def format_notes(notes) :
     """
     return notes.strip().replace("\n", "").replace(";", "")
 
+def format_labels(raw_labels) :
+    """
+    Format a raw, comma-separated labels string into a tuple of labels.
+    Removes any leading or trailing whitespace, drops empty labels and
+    duplicates (keeping the first occurrence), and removes any newline,
+    ";" or "," characters from each label.
+
+    Args:
+        raw_labels : comma-separated labels, e.g. "work, important"
+    Returns:
+        Tuple of unique, non-empty, formatted label strings
+    Effects:
+        None (pure function).
+    """
+    cleaned = (
+        label.strip().replace("\n", "").replace(";", "").replace(",", "")
+        for label in raw_labels.split(",")
+    )
+    unique_labels = []
+    for label in cleaned:
+        if label and label not in unique_labels:
+            unique_labels.append(label)
+    return tuple(unique_labels)
+
 # FACTORING FUNCTIONS
+
+def serialize_bookmark(bookmark):
+    """
+    Serialize a bookmark tuple into a single '; '-joined text line.
+
+    Args:
+        bookmark : tuple (id, title, url, notes, creation_date,
+            last_read_date, read_count, labels, related_ids)
+
+    Returns:
+        The bookmark formatted as a single line (without trailing newline),
+        with labels and related_ids joined by ','
+
+    Effects:
+        None (pure function).
+    """
+    fields = bookmark[:7] + (
+        ",".join(bookmark[7]), ",".join(map(str, bookmark[8]))
+    )
+    return "; ".join(str(field) for field in fields)
 
 def write_bookmarks(filename, file_right, bookmarks):
     """
     Write bookmarks to the bookmarks file, one per line, using the
-    id; title; url; notes; creation_date; last_read_date; read_count format.
+    id; title; url; notes; creation_date; last_read_date; read_count;
+    labels; related_ids format.
 
     Args:
         filename : path of the bookmarks file to write to
@@ -127,9 +179,7 @@ def write_bookmarks(filename, file_right, bookmarks):
         Opens filename in file_right mode and writes the serialized
         bookmarks to it.
     """
-    content = "".join(
-        "; ".join(str(field) for field in bookmark) + "\n" for bookmark in bookmarks
-    )
+    content = "".join(serialize_bookmark(bookmark) + "\n" for bookmark in bookmarks)
     with open(filename, file_right, encoding='utf-8') as f:
         f.write(content)
 
@@ -143,11 +193,14 @@ def parse_bookmarks(lines):
         lines: lines read from the bookmarks file.
 
     Returns:
-        List of tuples (id, title, url, notes, creation_date, last_read_date, read_count).
+        List of tuples (id, title, url, notes, creation_date, last_read_date,
+        read_count, labels, related_ids), labels being a tuple of strings
+        and related_ids a tuple of ints.
 
     Constraints:
         Each non-empty line must follow the
-        id; title; url; notes; creation_date; last_read_date; read_count format.
+        id; title; url; notes; creation_date; last_read_date; read_count;
+        labels; related_ids format.
 
     Effects:
         None (pure function).
@@ -157,34 +210,42 @@ def parse_bookmarks(lines):
         Parse a single bookmark line.
 
         Args:
-            line: line in the id; title; url; notes; creation_date; last_read_date;
-                read_count format.
+            line: line in the id; title; url; notes; creation_date;
+                last_read_date; read_count; labels; related_ids format.
+                Fields are split on ';' and individually stripped, so a
+                missing trailing space (e.g. an empty last field with no
+                space before the newline) does not break parsing.
 
         Returns:
-            Tuple (id, title, url, notes, creation_date, last_read_date, read_count).
+            Tuple (id, title, url, notes, creation_date, last_read_date,
+            read_count, labels, related_ids).
 
         Constraints:
-            The line must contain exactly seven fields separated by '; '.
+            The line must contain exactly nine fields separated by ';'.
 
         Effects:
             None (pure function).
         """
-        bookmark_id, title, url, notes, creation_date, last_read_date, read_count = (
-            line.split("; ", 6)
-        )
+        (
+            bookmark_id, title, url, notes, creation_date, last_read_date,
+            read_count, labels, related_ids
+        ) = (field.strip() for field in line.split(";", 8))
         return (
             int(bookmark_id), format_title(title), url,
-            format_notes(notes), creation_date, last_read_date, int(read_count)
+            format_notes(notes), creation_date, last_read_date, int(read_count),
+            tuple(label for label in labels.split(",") if label),
+            tuple(int(r) for r in related_ids.split(",") if r)
         )
 
-    return list(map(parse_line, filter(None, map(str.strip, lines))))
+    return list(map(parse_line, filter(str.strip, lines)))
 
 def url_duplicate_detection(details, bookmarks) :
     """
     Check whether the url contained in details is already used by an existing bookmark.
 
     Args:
-        details : tuple describing the bookmark (title, url, notes), url expected at index 1
+        details : tuple describing the bookmark (title, url, notes, labels),
+            url expected at index 1
         bookmarks : list of existing bookmark tuples
     Returns:
         True if the url is already present among the bookmarks, False otherwise
