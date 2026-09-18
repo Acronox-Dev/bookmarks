@@ -5,6 +5,7 @@ Command handlers bridging the CLI options to the core bookmark operations.
 from src import compliance, core, io_formats, search as search_module, stats as stats_module
 from src import related as related_module, synthesis, tree as tree_module
 from src import utils
+from src.options import create_parser
 
 def add(details, filename, bookmarks):
     '''
@@ -73,8 +74,10 @@ def modify(bookmark_id, details, filename, bookmarks):
         already used by another bookmark, or if no bookmark matches
         bookmark_id; otherwise rewrites filename with the modified bookmark.
     '''
-    # Verification
-    url_already_added = utils.url_duplicate_detection(details, bookmarks)
+    # Verification (the bookmark being modified is excluded, so keeping
+    # its own current url is not mistaken for a duplicate)
+    other_bookmarks = [b for b in bookmarks if b[0] != bookmark_id]
+    url_already_added = utils.url_duplicate_detection(details, other_bookmarks)
     if url_already_added :
         print("")
         return
@@ -254,7 +257,7 @@ def import_bookmarks(bookmarks, fmt, input_file, filename):
 
     Args:
         bookmarks : list of existing bookmarks
-        fmt : "json" or "csv"
+        fmt : "json", "csv" or "html" (Firefox/Chrome bookmarks)
         input_file : path of the file to import from
         filename : path of the bookmarks file to write the merged result to
 
@@ -285,3 +288,13 @@ def merge(files, output):
 
     merged = synthesis.synthesize(bookmark_lists)
     utils.write_bookmarks(output, 'w', merged)
+
+def show_help():
+    '''
+    Display the list of available commands and what each of them does.
+
+    Effects:
+        Prints the parser's help text, including every command and its
+        one-line description, to stdout.
+    '''
+    create_parser().print_help()

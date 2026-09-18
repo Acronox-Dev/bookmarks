@@ -8,7 +8,7 @@ def create_parser():
     """
     Build the command line argument parser with its subcommands (add, read,
     modify, rm, show, search, stats, tree, check, related, sequence,
-    export, import, merge).
+    export, import, merge, help).
 
     Returns:
         The configured argparse.ArgumentParser instance
@@ -123,15 +123,22 @@ def create_parser():
     parser_sequence.add_argument('id', help="the bookmark id to start from")
 
     # Create parser for the export command
-    parser_export = subparsers.add_parser('export', help='Export the bookmarks to a file')
-    parser_export.add_argument('format', choices=['json', 'csv'], help="the export format")
+    parser_export = subparsers.add_parser(
+        'export',
+        help='Export the bookmarks to a file (json, csv, html for Firefox/Chrome, or markdown)'
+    )
+    parser_export.add_argument(
+        'format', choices=['json', 'csv', 'html', 'markdown'], help="the export format"
+    )
     parser_export.add_argument('output', help="the file to export to")
 
     # Create parser for the import command
     parser_import = subparsers.add_parser(
-        'import', help='Import bookmarks from a file into the bookmarks file'
+        'import',
+        help='Import bookmarks from a file into the bookmarks file (json, csv, or html '
+             'from Firefox/Chrome)'
     )
-    parser_import.add_argument('format', choices=['json', 'csv'], help="the import format")
+    parser_import.add_argument('format', choices=['json', 'csv', 'html'], help="the import format")
     parser_import.add_argument('input', help="the file to import from")
 
     # Create parser for the merge command
@@ -140,5 +147,8 @@ def create_parser():
     )
     parser_merge.add_argument('files', nargs='+', help="the bookmarks files to merge")
     parser_merge.add_argument('-o', '--output', required=True, help="the merged output file")
+
+    # Create parser for the help command
+    subparsers.add_parser('help', help='Show what each command does')
 
     return parser

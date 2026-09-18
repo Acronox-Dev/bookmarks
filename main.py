@@ -119,6 +119,11 @@ def main():
 
     app_config = config.load_config(options.config)
 
+    if options.command == 'help':
+        commands.show_help()
+        logger.log_action(app_config, options.command, describe_options(options))
+        return
+
     if options.command == 'check':
         try:
             with open(options.file, 'r', encoding='utf-8') as f:

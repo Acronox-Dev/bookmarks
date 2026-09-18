@@ -180,20 +180,14 @@ def render_table(header, rows):
 
     border = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
 
-    def recursive_print(i):
-        if i >= len(parsed_rows):
-            return
-
-        row = parsed_rows[i]
+    # Iterative on purpose: a recursive print (one call per row) used to
+    # blow Python's default recursion limit on collections of roughly
+    # 1000+ bookmarks.
+    print(border)
+    for row in parsed_rows:
         centered_cells = [row[j].center(max_lengths[j]) for j in range(len(row))]
-
         print("| " + " | ".join(centered_cells) + " |")
         print(border)
-
-        recursive_print(i + 1)
-
-    print(border)
-    recursive_print(0)
 
 BOOKMARK_TABLE_HEADER = (
     "Id", "Title", "Url", "Notes", "Creation Date", "Last-Read Date",

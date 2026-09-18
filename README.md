@@ -22,7 +22,8 @@ optionally points to a JSON configuration file (see
 silently ignored if missing.
 
 Run `python main.py --help` or `python main.py <file> <command> --help`
-for the full list of options for each command.
+for the full list of options for each command, or
+`python main.py <file> help` for a one-screen summary of every command.
 
 ## Core commands (level 1)
 
@@ -136,12 +137,23 @@ bookmarks breadth-first, starting from the given id.
 ```
 python main.py bookmarks.txt export json backup.json
 python main.py bookmarks.txt export csv backup.csv
-python main.py other.txt import json backup.json
+python main.py bookmarks.txt export html firefox-bookmarks.html
+python main.py bookmarks.txt export markdown bookmarks.md
+python main.py other.txt import html firefox-bookmarks.html
 ```
 
-Supported formats: `json` and `csv`. `import` merges the file's content
-into the current bookmarks file the same way `merge` does (deduplicating
-by URL, see below), and writes the result back to it.
+Export formats: `json`, `csv`, `html` and `markdown`. Import formats:
+`json`, `csv` and `html` (`markdown` is export-only: a Markdown list
+can't reliably be parsed back into dates, read counts and related ids).
+
+`html` is the Netscape Bookmark File Format used by Firefox and Chrome
+for their own bookmark export/import, so `export html` produces a file
+you can import straight into a browser (labels become Firefox tags), and
+`import html` reads a file exported from either browser.
+
+`import` merges the file's content into the current bookmarks file the
+same way `merge` does (deduplicating by URL, see below), and writes the
+result back to it.
 
 ### merge — file synthesis (4.d)
 
@@ -220,7 +232,7 @@ src/stats.py            Reading statistics (3.b)
 src/tree.py             Tree view (4.b)
 src/related.py          Reading sequence traversal (4.c)
 src/compliance.py       File compliance checks (3.e)
-src/io_formats.py       JSON/CSV export and import (2.d, 4.e)
+src/io_formats.py       JSON/CSV/HTML(Firefox)/Markdown export and import (2.d, 4.e)
 src/synthesis.py        File merging/deduplication, shared by merge and import (4.d)
 src/exceptions.py       Custom exceptions
 tests/                  Unit tests (one file per src module, plus command-level integration tests)

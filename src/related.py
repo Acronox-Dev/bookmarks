@@ -3,7 +3,7 @@ Related bookmarks: recommend a reading sequence by traversing the graph
 of related_ids starting from a given bookmark.
 '''
 
-from src import core
+from collections import deque
 
 def reading_sequence(bookmarks, start_id):
     """
@@ -23,20 +23,21 @@ def reading_sequence(bookmarks, start_id):
     Effects:
         None (pure function).
     """
-    start = core.find(bookmarks, start_id)
+    index = {bookmark[0]: bookmark for bookmark in bookmarks}
+    start = index.get(start_id)
     if start is None:
         return []
 
-    visited = [start_id]
+    visited = {start_id}
     order = [start]
-    queue = list(start[8])
+    queue = deque(start[8])
 
     while queue:
-        current_id = queue.pop(0)
+        current_id = queue.popleft()
         if current_id in visited:
             continue
-        visited.append(current_id)
-        bookmark = core.find(bookmarks, current_id)
+        visited.add(current_id)
+        bookmark = index.get(current_id)
         if bookmark is None:
             continue
         order.append(bookmark)

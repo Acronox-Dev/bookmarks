@@ -236,5 +236,18 @@ class TestMergeCommand(unittest.TestCase):
         self.assertEqual([b[0] for b in merged], [1, 2])
 
 
+class TestShowHelpCommand(unittest.TestCase):
+    """Tests for commands.show_help."""
+
+    def test_lists_every_command(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            commands.show_help()
+        text = output.getvalue()
+        for command in ("add", "read", "modify", "rm", "show", "search", "stats", "tree",
+                         "check", "related", "sequence", "export", "import", "merge"):
+            self.assertIn(command, text)
+
+
 if __name__ == "__main__":
     unittest.main()
