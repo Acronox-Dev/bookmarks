@@ -15,11 +15,14 @@ def do_commands(options, bookmarks) :
         bookmarks : list of existing bookmarks
 
     Returns:
-        The result of the dispatched command (only for the 'add' command),
-        None otherwise.
+        None. The dispatched command handles its own output and file writes.
 
     Raises:
         InvalidURLError: if the provided url is not valid.
+
+    Effects:
+        May write to options.file and print to stdout, depending on the
+        dispatched command.
     """
     if options.command in ['add', 'modify'] :
         title = utils.format_title(options.t[:64] if options.t else "")
@@ -29,11 +32,15 @@ def do_commands(options, bookmarks) :
         if not utils.is_url_valid(url):
             raise InvalidURLError
 
-        details = "; ".join([title, url, notes])
+        details = (title, url, notes)
 
         if options.command == 'add' :
             commands.add(details, options.file, bookmarks)
-        commands.modify(options.id, details, options.file, bookmarks)
+        else :
+            commands.modify(options.id, details, options.file, bookmarks)
+
+    elif options.command == 'read':
+        commands.read(options.id, options.file, bookmarks)
 
     elif options.command == 'rm':
         commands.rm(options.id, options.file, bookmarks)
@@ -43,14 +50,21 @@ def do_commands(options, bookmarks) :
 
 def main():
     """
-    Entry point: parse the command line options, load the bookmarks file
-    and dispatch the requested command.
+    Entry point: parse the command line options, validate their types, load
+    the bookmarks file and dispatch the requested command.
+
+    Effects:
+        Reads options.file (creating it if missing) and, depending on the
+        dispatched command, writes to it and/or prints to stdout.
     """
     options = create_parser().parse_args()
 
+    if not utils.validate_option_types(options):
+        return
+
     try:
         with open(options.file, 'r', encoding='utf-8') as f:
-            bookmarks = f.readlines()
+            bookmarks = utils.parse_bookmarks(f.readlines())
 
         do_commands(options, bookmarks)
 

@@ -3,4 +3,4 @@ Custom exceptions used by the bookmarks application.
 '''
 
 class InvalidURLError(Exception):
-    """Exception levée quand une URL est invalide."""
+    """Raised when a bookmark's URL is not valid (see utils.is_url_valid)."""

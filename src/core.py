@@ -2,43 +2,95 @@
 Core operations on the in-memory list of bookmarks (add, modify, rm, show).
 '''
 
+from datetime import datetime
+
 def add(bookmarks, details) :
     """
-    Add a new bookmark into the list of current bookmarks
+    Add a new bookmark into the list of current bookmarks.
 
-    Arguments :
-        bookmarks : list of bookmarks
-        details : Array values to describe the bookmark
+    Args:
+        bookmarks : list of existing bookmarks, used to compute the new id
+        details : tuple (title, url, notes) describing the new bookmark
 
     Returns:
-        The new bookmark
+        The new bookmark tuple
+        (id, title, url, notes, creation_date, last_read_date, read_count),
+        with read_count at 0 and creation_date used as the initial
+        last_read_date
+
+    Constraints:
+        bookmarks must not contain duplicate ids.
+
+    Effects:
+        None (pure function, does not mutate bookmarks).
     """
-    bookmark = f"1; {details}\n"
+    new_id = 1 if not bookmarks else max(map(lambda b: b[0], bookmarks)) + 1
+    creation_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if bookmarks :
-        new_id = max(map(lambda b: int(b.split(";")[0]), bookmarks)) + 1
-        bookmark = f"{new_id}; {details}\n"
+    return (new_id, details[0], details[1], details[2], creation_date, creation_date, 0)
 
-    return bookmark
+def find(bookmarks, bookmark_id) :
+    """
+    Find a bookmark by its id.
 
-def modify(bookmarks, bookmark_id, new_details):
+    Args:
+        bookmarks : list of existing bookmarks
+        bookmark_id : bookmark_id of the bookmark to find
+
+    Returns:
+        The matching bookmark, or None if no bookmark has this id
+
+    Effects:
+        None (pure function).
+    """
+    found = list(filter(lambda b: b[0] == bookmark_id, bookmarks))
+    return found[0] if found else None
+
+def modify(bookmarks, bookmark_id, details):
     """
     Modify an existing bookmark with new details.
 
     Args:
         bookmarks : list of existing bookmarks
         bookmark_id : bookmark_id of the bookmark to modify
-        new_details : new details to update the bookmark with
+        details : new tuple (title, url, notes) to update the bookmark with
 
     Returns:
-        Updated list of bookmarks with the modified bookmark
+        Updated list of bookmarks, with the bookmark matching bookmark_id
+        replaced (id, creation_date, last_read_date and read_count kept
+        unchanged); the list is returned unchanged if no bookmark matches
+
+    Effects:
+        None (pure function, does not mutate bookmarks).
     """
-    updated_bookmarks = list(filter(
-        lambda b: str(bookmark_id) + new_details if b.split(";")[0] != bookmark_id else b,
+    modified_bookmarks = list(map(
+        lambda b: (b[0], details[0], details[1], details[2], b[4], b[5], b[6])
+        if b[0] == bookmark_id else b, bookmarks
+    ))
+    return modified_bookmarks
+
+def increment_read_count(bookmarks, bookmark_id) :
+    """
+    Increment the read count of a bookmark and refresh its last-read date.
+
+    Args:
+        bookmarks : list of existing bookmarks
+        bookmark_id : bookmark_id of the bookmark that was read
+
+    Returns:
+        Updated list of bookmarks with the read bookmark's last-read date
+        and read count refreshed; the list is returned unchanged if no
+        bookmark matches
+
+    Effects:
+        None (pure function, does not mutate bookmarks).
+    """
+    last_read_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return list(map(
+        lambda b: (b[0], b[1], b[2], b[3], b[4], last_read_date, b[6] + 1)
+        if b[0] == bookmark_id else b,
         bookmarks
     ))
-    modified = not updated_bookmarks == bookmarks
-    return updated_bookmarks, modified
 
 def rm(bookmarks, bookmark_id):
     """
@@ -49,11 +101,13 @@ def rm(bookmarks, bookmark_id):
         bookmark_id : bookmark_id of the bookmark to modify
 
     Returns:
-        Updated list of bookmarks without the removed bookmark
+        Updated list of bookmarks without the removed bookmark; the list is
+        returned unchanged if no bookmark matches
+
+    Effects:
+        None (pure function, does not mutate bookmarks).
     """
-    updated_bookmarks = list(filter(lambda b: b.split(";")[0] != bookmark_id, bookmarks))
-    modified = not updated_bookmarks == bookmarks
-    return updated_bookmarks, modified
+    return list(filter(lambda b: b[0] != bookmark_id, bookmarks))
 
 def show(bookmarks):
     """
@@ -61,12 +115,18 @@ def show(bookmarks):
 
     Args:
         bookmarks : list of existing bookmarks
+
+    Constraints:
+        Every bookmark must have the same number of fields as the header
+        (id, title, url, notes, creation_date, last_read_date, read_count).
+
+    Effects:
+        Prints the table to stdout.
     """
-    sorted_bookmarks = ["id;title;url;notes"] + sorted(
-        bookmarks, key=lambda x: int(x.split(";")[0])
-    )
-    parsed_bookmarks = [[item.strip() for item in b.split(";")] for b in sorted_bookmarks]
-    max_lengths = [max(len(row[i]) for row in parsed_bookmarks) for i in range(4)]
+    header = ("Id", "Title", "Url", "Notes", "Creation Date", "Last-Read Date", "Read Count")
+    sorted_bookmarks = [header] + sorted(bookmarks, key=lambda b: b[0])
+    parsed_bookmarks = [[str(item).strip() for item in b] for b in sorted_bookmarks]
+    max_lengths = [max(len(row[i]) for row in parsed_bookmarks) for i in range(len(header))]
 
     border = "+" + "+".join("-" * (length + 2) for length in max_lengths) + "+"
 

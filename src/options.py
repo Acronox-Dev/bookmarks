@@ -32,6 +32,13 @@ def create_parser():
     parser_add.add_argument('-u', nargs='?', default="no url", help="the url of the bookmark")
     parser_add.add_argument('-n', nargs='?', default="no notes", help="the notes of the bookmark")
 
+    # Create parser for the read command
+    parser_read = subparsers.add_parser(
+        'read',
+        help='Read a bookmark. The rest of the command line is used for the bookmark id'
+    )
+    parser_read.add_argument('id', help="the bookmark id")
+
     # Create parser for the modify command
     parser_modify = subparsers.add_parser(
         'modify',
